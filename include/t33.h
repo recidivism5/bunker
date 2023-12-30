@@ -3,8 +3,6 @@
 #include <base.h>
 #include <linalg.h>
 #include <miniglad.h>
-#include <qoa.h>
-#include <qoi.h>
 
 /*
 Put all shaders into a hash table. User calls use_shader("colorNormal"); for instance.
@@ -22,11 +20,6 @@ void create_window(char *title, int width, int height);
 Sets fullscreen mode on/off.
 */
 //void set_fullscreen(bool fullscreen);
-
-/*
-Returns the width and height of the window.
-*/
-//void get_window_dimensions(int *width, int *height);
 
 /*
 Starts the main loop (processing input and calling update_proc).
@@ -50,6 +43,12 @@ point. If you compile with subsystem:windows and don't change the
 entry point, this gets called from WinMain in window_win32.c.
 */
 int main(int argc, char **argv);
+
+/*
+User defined function that receives the new width and height of the client
+area whenever the window resizes.
+*/
+void resize_proc(int width, int height);
 
 /*
 User defined function that receives the time since last frame.

@@ -8,8 +8,17 @@
 typedef float vec3[3];
 typedef float vec4[4];
 typedef int ivec3[3];
-typedef float mat4[16];
+typedef vec4 mat4[4];
 
+inline void vec3_copy(vec3 dst, vec3 src){
+	memcpy(dst,src,sizeof(dst));
+}
+inline void vec4_copy(vec4 dst, vec4 src){
+	memcpy(dst,src,sizeof(dst));
+}
+inline void mat4_copy(mat4 dst, mat4 src){
+	memcpy(dst,src,sizeof(dst));
+}
 inline float vec3_dot(vec3 a, vec3 b){
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
@@ -76,386 +85,126 @@ inline void quat_slerp(vec4 a, vec4 b, float t){//from https://github.com/micros
 	}
 	for (int i = 0; i < 4; i++) a[i] = s1*a[i] + s2*b[i];
 }
-inline void mat4_identity(mat4 a){
-	a[0] = 1.0f;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = 1.0f;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = 1.0f;
-	a[11] = 0.0f;
-
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
-}
-inline void mat4_from_basis_vectors(mat4 a, vec3 x, vec3 y, vec3 z){
-	a[0] = x[0];
-	a[1] = x[1];
-	a[2] = x[2];
-	a[3] = 0.0f;
-
-	a[4] = y[0];
-	a[5] = y[1];
-	a[6] = y[2];
-	a[7] = 0.0f;
-
-	a[8] = z[0];
-	a[9] = z[1];
-	a[10] = z[2];
-	a[11] = 0.0f;
-
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
-}
-inline void mat4_transpose(mat4 a){
-	/*
-	0 4 8  12
-	1 5 9  13
-	2 6 10 14
-	3 7 11 15
-	*/
+inline void mat4_transpose(mat4 m){
 	float t;
-	SWAP(t,a[1],a[4]);
-	SWAP(t,a[2],a[8]);
-	SWAP(t,a[3],a[12]);
-	SWAP(t,a[6],a[9]);
-	SWAP(t,a[7],a[13]);
-	SWAP(t,a[11],a[14]);
+	SWAP(t,m[0][1],m[1][0]);
+	SWAP(t,m[0][2],m[2][0]);
+	SWAP(t,m[0][3],m[3][0]);
+	SWAP(t,m[1][2],m[2][1]);
+	SWAP(t,m[1][3],m[3][1]);
+	SWAP(t,m[2][3],m[3][2]);
 }
-inline void mat4_transpose_mat3(mat4 a){
-	/*
-	0 4 8  12
-	1 5 9  13
-	2 6 10 14
-	3 7 11 15
-	*/
-	float t;
-	SWAP(t,a[1],a[4]);
-	SWAP(t,a[2],a[8]);
-	SWAP(t,a[6],a[9]);
+inline void mat4_orthogonal(mat4 m, float left, float right, float bottom, float top, float near, float far){
+	m[0][0] = 2.0f/(right-left);
+	m[0][1] = 0.0f;
+	m[0][2] = 0.0f;
+	m[0][3] = 0.0f;
+
+	m[1][0] = 0.0f;
+	m[1][1] = 2.0f/(top-bottom);
+	m[1][2] = 0.0f;
+	m[1][3] = 0.0f;
+
+	m[2][0] = 0.0f;
+	m[2][1] = 0.0f;
+	m[2][2] = 2.0f/(near-far);
+	m[2][3] = 0.0f;
+
+	m[3][0] = (right+left)/(left-right);
+	m[3][1] = (top+bottom)/(bottom-top);
+	m[3][2] = (far+near)/(near-far);
+	m[3][3] = 1.0f;
 }
-inline void mat4_orthogonal(mat4 a, float left, float right, float bottom, float top, float near, float far){
-	a[0] = 2.0f/(right-left);
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = 2.0f/(top-bottom);
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = 2.0f/(near-far);
-	a[11] = 0.0f;
-
-	a[12] = (right+left)/(left-right);
-	a[13] = (top+bottom)/(bottom-top);
-	a[14] = (far+near)/(near-far);
-	a[15] = 1.0f;
-}
-inline void mat4_perspective(mat4 a, float fovRadians, float aspectRatio, float near, float far){
+inline void mat4_perspective(mat4 m, float fovRadians, float aspectRatio, float near, float far){
 	float s = 1.0f / tanf(fovRadians * 0.5f);
 	float d = near - far;
 
-	a[0] = s/aspectRatio;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
+	m[0][0] = s/aspectRatio;
+	m[0][1] = 0.0f;
+	m[0][2] = 0.0f;
+	m[0][3] = 0.0f;
 
-	a[4] = 0.0f;
-	a[5] = s;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
+	m[1][0] = 0.0f;
+	m[1][1] = s;
+	m[1][2] = 0.0f;
+	m[1][3] = 0.0f;
 
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = (far+near)/d;
-	a[11] = -1.0f;
+	m[2][0] = 0.0f;
+	m[2][1] = 0.0f;
+	m[2][2] = (far+near)/d;
+	m[2][3] = -1.0f;
 
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = (2.0f*far*near)/d;
-	a[15] = 0.0f;
+	m[3][0] = 0.0f;
+	m[3][1] = 0.0f;
+	m[3][2] = (2.0f*far*near)/d;
+	m[3][3] = 0.0f;
 }
-inline void mat4_scale(mat4 a, float x, float y, float z){
-	a[0] = x;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
+inline void mat4_translation(mat4 m, vec3 translation){
+	m[0][0] = 1.0f;
+	m[0][1] = 0.0f;
+	m[0][2] = 0.0f;
+	m[0][3] = 0.0f;
 
-	a[4] = 0.0f;
-	a[5] = y;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
+	m[1][0] = 0.0f;
+	m[1][1] = 1.0f;
+	m[1][2] = 0.0f;
+	m[1][3] = 0.0f;
 
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = z;
-	a[11] = 0.0f;
+	m[2][0] = 0.0f;
+	m[2][1] = 0.0f;
+	m[2][2] = 1.0f;
+	m[2][3] = 0.0f;
 
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
+	m[3][0] = translation[0];
+	m[3][1] = translation[1];
+	m[3][2] = translation[2];
+	m[3][3] = 1.0f;
 }
-inline void mat4_scale_v(mat4 a, vec3 scale){
-	a[0] = scale[0];
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
+inline void mat4_euler_zyx(mat4 dest, vec3 angles){//from cglm, thanks bro
+	float cx, cy, cz,
+		sx, sy, sz, czsx, cxcz, sysz;
 
-	a[4] = 0.0f;
-	a[5] = scale[1];
-	a[6] = 0.0f;
-	a[7] = 0.0f;
+	sx   = sinf(angles[0]); cx = cosf(angles[0]);
+	sy   = sinf(angles[1]); cy = cosf(angles[1]);
+	sz   = sinf(angles[2]); cz = cosf(angles[2]);
 
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = scale[2];
-	a[11] = 0.0f;
+	czsx = cz * sx;
+	cxcz = cx * cz;
+	sysz = sy * sz;
 
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
+	dest[0][0] =  cy * cz;
+	dest[0][1] =  cy * sz;
+	dest[0][2] = -sy;
+	dest[1][0] =  czsx * sy - cx * sz;
+	dest[1][1] =  cxcz + sx * sysz;
+	dest[1][2] =  cy * sx;
+	dest[2][0] =  cxcz * sy + sx * sz;
+	dest[2][1] = -czsx + cx * sysz;
+	dest[2][2] =  cx * cy;
+	dest[0][3] =  0.0f;
+	dest[1][3] =  0.0f;
+	dest[2][3] =  0.0f;
+	dest[3][0] =  0.0f;
+	dest[3][1] =  0.0f;
+	dest[3][2] =  0.0f;
+	dest[3][3] =  1.0f;
 }
-inline void mat4_translation(mat4 a, float x, float y, float z){
-	a[0] = 1.0f;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = 1.0f;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = 1.0f;
-	a[11] = 0.0f;
-
-	a[12] = x;
-	a[13] = y;
-	a[14] = z;
-	a[15] = 1.0f;
-}
-inline void mat4_translation_v(mat4 a, vec3 translation){
-	a[0] = 1.0f;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = 1.0f;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = 1.0f;
-	a[11] = 0.0f;
-
-	a[12] = translation[0];
-	a[13] = translation[1];
-	a[14] = translation[2];
-	a[15] = 1.0f;
-}
-inline void mat4_rotation_x(mat4 a, float angle){
-	float c = cosf(angle);
-	float s = sinf(angle);
-
-	a[0] = 1.0f;
-	a[1] = 0.0f;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = c;
-	a[6] = s;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = -s;
-	a[10] = c;
-	a[11] = 0.0f;
-
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
-}
-inline void mat4_rotation_y(mat4 a, float angle){
-	float c = cosf(angle);
-	float s = sinf(angle);
-
-	a[0] = c;
-	a[1] = 0.0f;
-	a[2] = -s;
-	a[3] = 0.0f;
-
-	a[4] = 0.0f;
-	a[5] = 1.0f;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = s;
-	a[9] = 0.0f;
-	a[10] = c;
-	a[11] = 0.0f;
-
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
-}
-inline void mat4_rotation_z(mat4 a, float angle){
-	float c = cosf(angle);
-	float s = sinf(angle);
-
-	a[0] = c;
-	a[1] = s;
-	a[2] = 0.0f;
-	a[3] = 0.0f;
-
-	a[4] = -s;
-	a[5] = c;
-	a[6] = 0.0f;
-	a[7] = 0.0f;
-
-	a[8] = 0.0f;
-	a[9] = 0.0f;
-	a[10] = 1.0f;
-	a[11] = 0.0f;
-
-	a[12] = 0.0f;
-	a[13] = 0.0f;
-	a[14] = 0.0f;
-	a[15] = 1.0f;
-}
-inline void mat4_multiply(mat4 a, mat4 b, mat4 out){
+inline void mat4_mul(mat4 a, mat4 b, mat4 out){
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			out[i*4+j] = a[j]*b[i*4] + a[j+4]*b[i*4+1] + a[j+8]*b[i*4+2] + a[j+12]*b[i*4+3];
+			out[i][j] = a[0][j]*b[i][0] + a[1][j]*b[i][1] + a[2][j]*b[i][2] + a[3][j]*b[i][3];
 }
-inline void mat4_multiply_vec4(mat4 m, vec4 v, vec4 out){
-	for (int i = 0; i < 4; i++) out[i] = v[0]*m[i] + v[1]*m[4+i] + v[2]*m[8+i] + v[3]*m[12+i];
+inline void mat4_mul_vec4(mat4 m, vec4 v, vec4 out){
+	for (int i = 0; i < 4; i++) out[i] = v[0]*m[0][i] + v[1]*m[1][i] + v[2]*m[2][i] + v[3]*m[3][i];
 }
-inline void mat4_look_at_y(mat4 m, vec3 eye, vec3 target){//rotates eye about Y to look at target
-	float kx = target[0] - eye[0];
-	float kz = target[2] - eye[2];
-	float d = 1.0f / sqrtf(kx*kx + kz*kz);
-	kx *= d;
-	kz *= d;
-
-	m[0] = -kz;
-	m[1] = 0.0f;
-	m[2] = kx;
-	m[3] = 0.0f;
-
-	m[4] = 0.0f;
-	m[5] = 1.0f;
-	m[6] = 0.0f;
-	m[7] = 0.0f;
-
-	m[8] = -kx;
-	m[9] = 0.0f;
-	m[10] = -kz;
-	m[11] = 0.0f;
-
-	m[12] = 0.0f;
-	m[13] = 0.0f;
-	m[14] = 0.0f;
-	m[15] = 1.0f;
-}
-inline void mat4_look_at_xy(mat4 m, vec3 eye, vec3 target){//rotates eye about X and Y to look at target
-	float kx = target[0] - eye[0],
-		ky = target[1] - eye[1],
-		kz = target[2] - eye[2];
-	float d = 1.0f / sqrtf(kx*kx + ky*ky + kz*kz);
-	kx *= d;
-	ky *= d;
-	kz *= d;
-
-	float ix = -kz,
-		iz = kx;
-	d = 1.0f / sqrtf(ix*ix + iz*iz);
-	ix *= d;
-	iz *= d;
-
-	float jx = -iz*ky,
-		jy = iz*kx - ix*kz,
-		jz = ix*ky;
-
-	m[0] = ix;
-	m[1] = 0.0f;
-	m[2] = iz;
-	m[3] = 0.0f;
-
-	m[4] = jx;
-	m[5] = jy;
-	m[6] = jz;
-	m[7] = 0.0f;
-
-	m[8] = -kx;
-	m[9] = -ky;
-	m[10] = -kz;
-	m[11] = 0.0f;
-
-	m[12] = 0.0f;
-	m[13] = 0.0f;
-	m[14] = 0.0f;
-	m[15] = 1.0f;
-}
-inline void mat4_look_at_xy_view(mat4 m, vec3 eye, vec3 target){//produces a view matrix
-	float kx = target[0] - eye[0],
-		ky = target[1] - eye[1],
-		kz = target[2] - eye[2];
-	float d = 1.0f / sqrtf(kx*kx + ky*ky + kz*kz);
-	kx *= d;
-	ky *= d;
-	kz *= d;
-
-	float ix = -kz,
-		iz = kx;
-	d = 1.0f / sqrtf(ix*ix + iz*iz);
-	ix *= d;
-	iz *= d;
-
-	float jx = -iz*ky,
-		jy = iz*kx - ix*kz,
-		jz = ix*ky;
-
-	m[0] = ix;
-	m[1] = jx;
-	m[2] = -kx;
-	m[3] = 0.0f;
-
-	m[4] = 0.0f;
-	m[5] = jy;
-	m[6] = -ky;
-	m[7] = 0.0f;
-
-	m[8] = iz;
-	m[9] = jz;
-	m[10] = -kz;
-	m[11] = 0.0f;
-
-	m[12] = -(ix*eye[0] + iz*eye[2]);
-	m[13] = -(jx*eye[0] + jy*eye[1] + jz*eye[2]);
-	m[14] = kx*eye[0] + ky*eye[1] + kz*eye[2];
-	m[15] = 1.0f;
+inline void mat4_view(mat4 m, vec3 euler, vec3 translation){
+	mat4 rot;
+	mat4_euler_zyx(rot,euler);
+	mat4_transpose(rot);
+	mat4 trans;
+	vec3 ntrans;
+	vec3_copy(ntrans,translation);
+	vec3_negate(ntrans);
+	mat4_translation(trans,ntrans);
+	mat4_mul(rot,trans,m);
 }

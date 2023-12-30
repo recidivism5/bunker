@@ -104,7 +104,7 @@ static LRESULT CALLBACK wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	HDC dc = GetDC(hWnd);
 	switch (message){
 		case WM_SIZE:
-			glViewport(0, 0, LOWORD(lParam), HIWORD(lParam));
+			resize_proc(LOWORD(lParam), HIWORD(lParam));
 			break;
 		case WM_KEYDOWN:
 			if (wParam == 27){
